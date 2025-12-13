@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>The Claude Game 🍪🐱🚓🌳</title>
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  text-align: center;
+  background: #eef2ff;
+  padding: 20px;
+}
+
+#rules {
+  background: #ffffff;
+  border-radius: 15px;
+  padding: 15px;
+  margin-bottom: 15px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+}
+
+#game-area {
+  position: relative;
+  width: 90vw;
+  height: 65vh;
+  margin: 0 auto;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  overflow: hidden;
+}
+
+#claude {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+}
+
+#claude img {
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  user-select: none;
+  pointer-events: none;
+}
+
+#speech {
+  position: absolute;
+  background: white;
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: 14px;
+  max-width: 220px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  pointer-events: none;
+  display: none;
+}
+
+.item {
+  position: absolute;
+  font-size: 36px;
+}
+
+#hud {
+  margin-top: 10px;
+  font-size: 1.1rem;
+  font-weight: bold;
+}
+
+button {
+  margin-top: 12px;
+  padding: 10px 20px;
+  font-size: 1rem;
+}
+</style>
+</head>
+
+<body>
+
+<h1>The Claude Game 🍪🐱🚓🌳</h1>
+
+<div id="rules">
+  <strong>Rules:</strong><br>
+  Collect <b>5 Cookies 🍪</b> and <b>5 Meow Meows 🐱</b> to pass each level.<br>
+  Avoid the <b>Police 🚓</b> and the <b>National Trust 🌳</b>.<br>
+  Each level gets faster. Lives do <u>not</u> reset.
+</div>
+
+<p id="status">Press Start, then click inside the game</p>
+
+<div id="game-area" tabindex="0">
+  <div id="claude"><img src="claude.png" alt="Claude"></div>
+  <div id="speech"></div>
+</div>
+
+<div id="hud">
+  Level: <span id="level">1</span> |
+  🍪 <span id="cookies">0</span>/5 |
+  🐱 <span id="cats">0</span>/5 |
+  Lives: <span id="lives">3</span>
+</div>
+
+<button onclick="startGame()">Start Game</button>
+
+<script>
+let playing = false;
+let lives = 3;
+let level = 1;
+let cookies = 0;
+let cats = 0;
+
+const quotes = [
+  "Who put slime in the foraging chest",
+  "You are not allowed to park there",
+  "You dont know what it was like in Cyprus. You werent there man"
+];
+
+const gameArea = document.getElementById("game-area");
+const claude = document.getElementById("claude");
+const speech = document.getElementById("speech");
+const status = document.getElementById("status");
+
+const levelDisplay = document.getElementById("level");
+const livesDisplay = document.getElementById("lives");
+const cookiesDisplay = document.getElementById("cookies");
+const catsDisplay = document.getElementById("cats");
+
+let x = 200;
+let y = 200;
+const speed = 12;
+let itemSpeed = 2;
+
+function startGame() {
+  playing = true;
+  lives = 3;
+  level = 1;
+  status.innerText = "Level 1 begins!";
+  resetLevel();
+}
+
+function resetLevel() {
+  cookies = 0;
+  cats = 0;
+
+  cookiesDisplay.innerText = cookies;
+  catsDisplay.innerText = cats;
+  livesDisplay.innerText = lives;
+  levelDisplay.innerText = level;
+
+  itemSpeed = 2 + level;
+
+  x = gameArea.clientWidth / 2 - 25;
+  y = gameArea.clientHeight / 2 - 25;
+  updateClaude();
+
+  document.querySelectorAll('.item').forEach(i => i.remove());
+
+  const policeCount = 2 + (level - 1);
+  const trustCount = 2 + (level - 1);
+
+  for (let i = 0; i < 5; i++) spawnItem("cookie");
+  for (let i = 0; i < 5; i++) spawnItem("cat");
+  for (let i = 0; i < policeCount; i++) spawnItem("bad", "🚓");
+  for (let i = 0; i < trustCount; i++) spawnItem("bad", "🌳");
+}
+
+function updateClaude() {
+  claude.style.left = x + "px";
+  claude.style.top = y + "px";
+  speech.style.left = x + 45 + "px";
+  speech.style.top = y - 10 + "px";
+}
+
+document.addEventListener("keydown", e => {
+  if (!playing) return;
+
+  if (["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.key)) {
+    e.preventDefault();
+  }
+
+  if (e.key === "ArrowUp") y -= speed;
+  if (e.key === "ArrowDown") y += speed;
+  if (e.key === "ArrowLeft") x -= speed;
+  if (e.key === "ArrowRight") x += speed;
+
+  x = Math.max(0, Math.min(gameArea.clientWidth - 50, x));
+  y = Math.max(0, Math.min(gameArea.clientHeight - 50, y));
+
+  updateClaude();
+});
+
+function spawnItem(type, emoji) {
+  const item = document.createElement("div");
+  item.className = "item";
+
+  if (type === "cookie") item.innerText = "🍪";
+  if (type === "cat") item.innerText = "🐱";
+  if (type === "bad") item.innerText = emoji;
+
+  let ix = Math.random() * (gameArea.clientWidth - 40);
+  let iy = Math.random() * (gameArea.clientHeight - 40);
+  let vx = (Math.random() * 2 - 1) * itemSpeed;
+  let vy = (Math.random() * 2 - 1) * itemSpeed;
+
+  item.style.left = ix + "px";
+  item.style.top = iy + "px";
+  gameArea.appendChild(item);
+
+  const mover = setInterval(() => {
+    if (!playing) { clearInterval(mover); return; }
+
+    ix += vx;
+    iy += vy;
+
+    if (ix < 0 || ix > gameArea.clientWidth - 40) vx *= -1;
+    if (iy < 0 || iy > gameArea.clientHeight - 40) vy *= -1;
+
+    item.style.left = ix + "px";
+    item.style.top = iy + "px";
+
+    const c = claude.getBoundingClientRect();
+    const i = item.getBoundingClientRect();
+
+    if (c.left < i.right && c.right > i.left && c.top < i.bottom && c.bottom > i.top) {
+      clearInterval(mover);
+      item.remove();
+
+      if (type === "cookie") {
+        cookies++;
+        cookiesDisplay.innerText = cookies;
+        showSpeech();
+      } else if (type === "cat") {
+        cats++;
+        catsDisplay.innerText = cats;
+        showSpeech();
+      } else {
+        lives--;
+        livesDisplay.innerText = lives;
+        speech.innerText = "Oh no…";
+        speech.style.display = "block";
+
+        if (lives <= 0) {
+          playing = false;
+          status.innerText = "The visa was unsuccessful and Claude is faced with a lifetime in Slave Lake.";
+          return;
+        }
+      }
+
+      checkLevelComplete();
+    }
+  }, 40);
+}
+
+function checkLevelComplete() {
+  if (cookies >= 5 && cats >= 5) {
+    level++;
+
+    if (level > 8) {
+      playing = false;
+      status.innerText = "Meow Meow got her visa and is with Claude happily ever after 🐱❤️";
+      return;
+    }
+
+    status.innerText = "Level " + level + " begins!";
+    resetLevel();
+  }
+}
+
+function showSpeech() {
+  speech.innerText = quotes[Math.floor(Math.random() * quotes.length)];
+  speech.style.display = "block";
+  setTimeout(() => speech.style.display = "none", 2000);
+}
+</script>
+
+</body>
+</html>
